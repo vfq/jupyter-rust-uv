@@ -52,4 +52,4 @@ WORKDIR /home/jovyan/work
 
 # 为SwarmSpawner添加必要标签
 LABEL maintainer="Feature"
-LABEL description="Jupyter notebook with Rust evcxr kernel and uv for package management"
+LABEL description="Jupyter notebook with Rust evcxr kernel and uv for package management!"
