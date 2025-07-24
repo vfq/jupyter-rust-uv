@@ -24,9 +24,11 @@ RUN \
     \
     # 2. 安装 Rust 工具链
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+RUN . "${HOME}/.cargo/env"
     
     # 3. 主动将 cargo 的路径导出到当前 Shell 的 PATH 中
-ENV PATH="/home/jovyan/.cargo/bin:$PATH" 
+ENV PATH="/home/jovyan/.cargo/bin:/home/jovyan/.local/bin:${PATH}" 
     
     # 4. 编译和安装 evcxr_jupyter 到用户目录
 RUN cargo install evcxr_jupyter
