@@ -1,71 +1,69 @@
+# 使用官方镜像作为基础
 FROM quay.io/jupyter/scipy-notebook:latest
 
 # ===================================================================================
-# 阶段 1: 以 root 身份安装系统级依赖和核心工具 (uv)
+# 阶段 1: 以 root 身份，完成所有的环境准备和软件安装
 # ===================================================================================
+
+# 明确指定我们将在整个构建和运行过程都使用 root 用户
 USER root
 
-# 合并所有 apt-get 操作以减少镜像层数
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    pkg-config \
-    libssl-dev \
-    curl \
-    iputils-ping \
-    net-tools \
-    dnsutils \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# 设置环境变量，将 Rust/Cargo 的路径添加到 PATH
+# 因为我们是 root，所以路径是 /root/.cargo/bin
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-# 安装 uv 并将其移动到标准的系统路径 /usr/local/bin
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    mv /root/.cargo/bin/uv /usr/local/bin/uv
-
-
-# ===================================================================================
-# 阶段 2: 切换到 jovyan 用户，仅用于编译和安装 Rust 程序到其 home 目录
-# ===================================================================================
-USER jovyan
-
-# 安装 Rust 工具链
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    # 加载 cargo 环境变量以用于本 RUN 指令后续步骤
-    . "/home/jovyan/.cargo/env" && \
-    # 只编译和安装 evcxr_jupyter 到 jovyan 的 home 目录
-    cargo install evcxr_jupyter
-
-
-# ===================================================================================
-# 阶段 3: 再次切换到 root 用户，执行所有需要管理员权限的“系统集成”任务
-# ===================================================================================
-USER root
-
-# 创建一个系统级的 profile 脚本，为所有用户永久性地设置 cargo 的 PATH
-# 这是确保运行时 Jupyter 内核能找到 cargo 的最可靠方法
-RUN echo 'export PATH="/home/jovyan/.cargo/bin:$PATH"' > /etc/profile.d/cargo.sh && \
-    chmod +x /etc/profile.d/cargo.sh
-
-# 执行需要 root 权限的安装和注册
+# 合并所有 RUN 指令以优化镜像层数和构建效率
 RUN \
-    # 1. 将 evcxr_jupyter 内核注册到系统，防止被挂载卷覆盖
-    /home/jovyan/.cargo/bin/evcxr_jupyter --install --sys-prefix && \
+    # 1. 更新并安装系统依赖
+    apt-get update && apt-get install -y \
+        build-essential \
+        cmake \
+        pkg-config \
+        libssl-dev \
+        curl \
+        iputils-ping \
+        net-tools \
+        dnsutils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* && \
     \
-    # 2. 使用 uv 高速安装系统级的 Python 包
-    uv pip install --system --no-cache-dir jupyterhub jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
+    # 2. 安装 uv (由 root 安装，默认位于 /root/.cargo/bin)
+    curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    \
+    # 3. 安装 Rust 工具链
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    \
+    # 4. 加载 cargo 环境变量以用于本 RUN 指令后续步骤
+    . "/root/.cargo/env" && \
+    \
+    # 5. 安装并注册 Rust 内核到系统
+    #    因为我们是 root，所以有权限直接写入系统路径
+    cargo install evcxr_jupyter && \
+    evcxr_jupyter --install --sys-prefix && \
+    \
+    # 6. 使用 uv 高速安装系统级的 Python 包
+    uv pip install --system --no-cache-dir jupyterhub jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server && \
+    \
+    # 7. 最终验证
+    echo "--- Verifying installations ---" && \
+    jupyter kernelspec list && \
+    uv --version && \
+    cargo --version && \
+    which jupyterhub-singleuser && \
+    echo "--- Verification complete ---"
 
 
 # ===================================================================================
-# 阶段 4: 最终切换回非 root 用户并设置工作目录，保证运行时安全
+# 阶段 2: 设置最终的容器工作环境
 # ===================================================================================
-USER jovyan
 
-# 设置工作目录为用户的家目录，这是最标准的做法
-# 您在 K8s 中设置的卷权限修正（fsGroup 或 lifecycleHook）会确保此目录可写
+# 关键一步：设置工作目录到 /home/jovyan
+# 这确保了您创建的 Notebook 会保存在 K8s 挂载的持久卷中，而不是容器内的 /root 目录
 WORKDIR /home/jovyan
 
-# 为SwarmSpawner或其它编排工具添加标签
-LABEL maintainer="JupyterHub"
-LABEL description="Jupyter notebook with system-wide Rust kernel, uv, and tools for JupyterHub"
+# 添加镜像元数据标签
+LABEL maintainer="Feature"
+LABEL description="[ROOT USER] Jupyter notebook with system-wide Rust kernel, uv, and tools"
 
-# CMD/ENTRYPOINT 由 JupyterHub Spawner 在启动时提供，此处无需设置
+# CMD/ENTRYPOINT 由基础镜像继承，最终会启动 JupyterLab
+# 注意：此容器将以 root 用户身份运行
