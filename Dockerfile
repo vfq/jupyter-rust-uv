@@ -19,8 +19,9 @@ USER jovyan
 
 RUN \
     # 1. 安装 Rust 工具链
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    . "${HOME}/.cargo/env"
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
+
+ENV PATH="/home/jovyan/.cargo/bin:/home/jovyan/.local/bin:${PATH}"
     
     # 2. 编译和安装 evcxr_jupyter 到用户目录
 RUN cargo install evcxr_jupyter && \
@@ -31,9 +32,6 @@ RUN cargo install evcxr_jupyter && \
 RUN \
     # 3. 使用系统级的 uv 安装系统级的 Python 包
     uv pip install --no-cache-dir jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
-
-# 使用 ENV 为最终的运行时环境设置 PATH，确保 jovyan 能找到 cargo
-ENV PATH="/home/jovyan/.cargo/bin:/home/jovyan/.local/bin:${PATH}"
 
 WORKDIR /home/jovyan
 
