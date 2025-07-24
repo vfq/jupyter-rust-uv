@@ -1,52 +1,65 @@
 FROM quay.io/jupyter/scipy-notebook:latest
 
+# ===================================================================================
+# 步骤 1: 以 root 用户身份，安装所有系统级的依赖和工具
+# ===================================================================================
 USER root
 
-# 安装Rust依赖
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    pkg-config \
-    libssl-dev \
-    curl \
-    iputils-ping \
-    net-tools \
-    dnsutils \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential cmake pkg-config libssl-dev curl \
+    iputils-ping net-tools dnsutils \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
+
+# ===================================================================================
+# 步骤 2: 切换到 jovyan 用户，仅用于编译和安装 Rust 程序到其 home 目录
+# ===================================================================================
 USER jovyan
 
+# 为 Rust 的 cargo 命令设置 PATH (这对 jovyan 用户生效)
 ENV PATH="/home/jovyan/.cargo/bin:${PATH}"
 
-# 将所有用户级的安装合并到一个 RUN 指令中
 RUN \
     # 1. 安装 Rust 工具链
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
     \
-    # 核心修正：手动加载 cargo 的环境变量，以便在当前 shell 会话中立即生效
+    # 2. 加载 cargo 环境变量
     . "/home/jovyan/.cargo/env" && \
     \
-    # 2. 安装 Rust Kernel for Jupyter (现在可以找到 cargo 了)
-    cargo install evcxr_jupyter && \
-    evcxr_jupyter --install --sys-prefix && \
+    # 3. 只编译和安装 evcxr_jupyter 到 jovyan 的 home 目录
+    cargo install evcxr_jupyter
+
+
+# ===================================================================================
+# 步骤 3: 再次切换到 root 用户，执行所有需要管理员权限的系统级安装和注册
+# ===================================================================================
+USER root
+
+RUN \
+    # 1. 核心修正：以 root 身份调用刚才安装好的程序，将其注册到系统
+    #    我们使用完整路径来调用它
+    /home/jovyan/.cargo/bin/evcxr_jupyter --install --sys-prefix && \
     \
-    # 3. 安装 JupyterHub/Lab 相关 Python 包
+    # 2. 将 Python 包的安装也作为系统级任务来执行
     uv pip install --system --no-cache-dir jupyterhub jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server && \
     \
-    # 4. 最终验证
+    # 3. 最终验证
     echo "--- Verifying installations ---" && \
     jupyter kernelspec list && \
     uv --version && \
-    cargo --version && \
+    /home/jovyan/.cargo/bin/cargo --version && \
     which jupyterhub-singleuser && \
     echo "--- Verification complete ---"
 
-# 设置工作目录
-WORKDIR /home/jovyan/work
 
-# 为SwarmSpawner添加必要标签
+# ===================================================================================
+# 步骤 4: 最终切换回非 root 用户并设置工作目录，以保证运行时安全
+# ===================================================================================
+USER jovyan
+
+WORKDIR /home/jovyan
+
 LABEL maintainer="Feature"
-LABEL description="Jupyter notebook with Rust evcxr kernel and uv for package management!"
+LABEL description="Jupyter notebook with system-wide Rust kernel, uv, and tools for JupyterHub"
