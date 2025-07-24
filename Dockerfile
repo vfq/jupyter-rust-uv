@@ -31,7 +31,7 @@ RUN cargo install evcxr_jupyter && \
     # 2. 将用户空间编译的 Rust 内核注册到系统路径
 RUN \
     # 3. 使用系统级的 uv 安装系统级的 Python 包
-    uv pip install --no-cache-dir jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
+    uv pip install --system --no-cache-dir jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
 
 WORKDIR /home/jovyan
 
