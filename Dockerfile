@@ -10,7 +10,9 @@ RUN apt-get update && apt-get install -y \
     iputils-ping net-tools dnsutils \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# 核心修正：安装 uv 后，必须手动将其移动到系统 PATH 路径中
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    mv /root/.cargo/bin/uv /usr/local/bin/uv
 
 
 # ===================================================================================
@@ -18,17 +20,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 # ===================================================================================
 USER jovyan
 
-# 为 Rust 的 cargo 命令设置 PATH (这对 jovyan 用户生效)
 ENV PATH="/home/jovyan/.cargo/bin:${PATH}"
 
 RUN \
-    # 1. 安装 Rust 工具链
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    \
-    # 2. 加载 cargo 环境变量
     . "/home/jovyan/.cargo/env" && \
-    \
-    # 3. 只编译和安装 evcxr_jupyter 到 jovyan 的 home 目录
     cargo install evcxr_jupyter
 
 
@@ -38,14 +34,8 @@ RUN \
 USER root
 
 RUN \
-    # 1. 核心修正：以 root 身份调用刚才安装好的程序，将其注册到系统
-    #    我们使用完整路径来调用它
     /home/jovyan/.cargo/bin/evcxr_jupyter --install --sys-prefix && \
-    \
-    # 2. 将 Python 包的安装也作为系统级任务来执行
     uv pip install --system --no-cache-dir jupyterhub jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server && \
-    \
-    # 3. 最终验证
     echo "--- Verifying installations ---" && \
     jupyter kernelspec list && \
     uv --version && \
@@ -61,5 +51,5 @@ USER jovyan
 
 WORKDIR /home/jovyan
 
-LABEL maintainer="Feature"
+LABEL maintainer="JupyterHub"
 LABEL description="Jupyter notebook with system-wide Rust kernel, uv, and tools for JupyterHub"
