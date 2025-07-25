@@ -40,7 +40,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
 # 安装 evcxr_jupyter 并注册为系统级 kernel
 RUN source $CARGO_HOME/env && \
     cargo install evcxr_jupyter && \
-    evcxr_jupyter --install --sys-prefix
+    evcxr_jupyter --install --prefix /opt/conda
 
 # 创建软链接确保路径通用（即使 PATH 被重置）
 RUN ln -sf /opt/rust/bin/cargo /usr/local/bin/cargo && \
