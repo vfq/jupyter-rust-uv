@@ -33,7 +33,6 @@ ENV PATH="/opt/rust/bin:${PATH}"
 
 # 安装 Rust（自动把 cargo、rustc 放到 /opt/rust/bin）
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && source $CARGO_HOME/env \
     && rustc --version \
     && cargo --version
 
@@ -41,11 +40,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
 RUN source $CARGO_HOME/env && \
     cargo install evcxr_jupyter && \
     evcxr_jupyter --install --sys-prefix
-
-# 安装 uv（必须从source引入变量后再装）
-RUN source $CARGO_HOME/env && \
-    cargo install uv && \
-    uv --version
 
 # 创建软链接确保路径通用（即使 PATH 被重置）
 RUN ln -sf /opt/rust/bin/cargo /usr/local/bin/cargo && \
@@ -73,4 +67,4 @@ WORKDIR /home/jovyan
 
 # 元数据标签
 LABEL maintainer="Feature"
-LABEL description="JupyterLab in K8s with Rust kernel, uv, pre-installed tools (system-wide)"
+LABEL description="JupyterLab in K8s with Rust kernel, pre-installed tools (system-wide)"
