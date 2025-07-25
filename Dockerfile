@@ -13,25 +13,30 @@ RUN apt-get update && apt-get install -y \
 
 # ===================================================================================
 # 阶段 2: 切换到 jovyan 用户，完成所有用户空间的编译和安装
-# 这会将 uv, rustc, cargo, evcxr_jupyter 等都安装到 /home/jovyan 目录下
 # ===================================================================================
 USER jovyan
 
-RUN \
-    # 1. 安装 Rust 工具链
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
+# 预先创建相关目录，避免不存在
+RUN mkdir -p /home/jovyan/.cargo/bin /home/jovyan/.local/bin
 
+# 设置 PATH，确保后续 RUN 都能用到 cargo、uv、pip3 等
 ENV PATH="/home/jovyan/.cargo/bin:/home/jovyan/.local/bin:${PATH}"
-    
-    # 2. 编译和安装 evcxr_jupyter 到用户目录
-RUN cargo install evcxr_jupyter && \
-    evcxr_jupyter --install && \
-    cargo install --git https://github.com/astral-sh/uv uv
 
-    # 2. 将用户空间编译的 Rust 内核注册到系统路径
-RUN \
-    # 3. 使用系统级的 uv 安装系统级的 Python 包
-    uv pip install --system --no-cache-dir jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
+# 1. 安装 Rust 工具链
+# rustup 会自动把 cargo、rustc 装进 ~/.cargo/bin
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && /home/jovyan/.cargo/bin/rustc --version \
+    && /home/jovyan/.cargo/bin/cargo --version
+
+# 2. 编译和安装 evcxr_jupyter 到用户目录
+RUN /home/jovyan/.cargo/bin/cargo install evcxr_jupyter \
+    && /home/jovyan/.cargo/bin/evcxr_jupyter --install \
+    && /home/jovyan/.cargo/bin/cargo install --git https://github.com/astral-sh/uv uv \
+    && /home/jovyan/.cargo/bin/uv --version
+
+# 3. 使用 uv 安装 Python 包
+RUN /home/jovyan/.cargo/bin/uv pip install --system --no-cache-dir \
+        jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
 
 WORKDIR /home/jovyan
 
