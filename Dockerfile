@@ -29,6 +29,7 @@ RUN apt-get update && \
 # 设置安装路径（防止挂载 HOME 导致无效）
 ENV RUSTUP_HOME=/opt/rust
 ENV CARGO_HOME=/opt/rust
+ENV UV_INSTALL_DIR=/opt/rust/bin
 ENV PATH="/opt/rust/bin:${PATH}"
 
 # 安装 Rust（自动把 cargo、rustc 放到 /opt/rust/bin）
@@ -47,6 +48,9 @@ RUN ln -sf /opt/rust/bin/cargo /usr/local/bin/cargo && \
     ln -sf /opt/rust/bin/uv /usr/local/bin/uv && \
     ln -sf /opt/rust/bin/uvx /usr/local/bin/uvx
 
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && uv --version
+
 # ------------------------------------------------------------
 # 阶段 3：切回 jovyan 用户并安装常用 Python 包
 # ------------------------------------------------------------
@@ -56,7 +60,7 @@ USER jovyan
 RUN echo 'source /opt/rust/env 2>/dev/null || true' >> ~/.bashrc
 
 # 用 uv 安装 Python 扩展（系统级，避免用户目录被 PV 覆盖）
-RUN pip install --system --no-cache-dir \
+RUN uv pip install --system --no-cache-dir \
         jupyterlab-language-pack-zh-CN \
         jupyterlab-lsp \
         jedi-language-server
