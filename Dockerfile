@@ -1,44 +1,67 @@
-# 使用官方镜像作为基础
+# 采用官方镜像作为基础
 FROM quay.io/jupyter/scipy-notebook:latest
 
-# ===================================================================================
-# 阶段 1: 以 root 身份安装所有系统级的 OS 依赖
-# ===================================================================================
+# ------------------------------------------------------------
+# 阶段 1：以 root 身份安装系统依赖
+# ------------------------------------------------------------
 USER root
 
-RUN apt-get update && apt-get install -y \
-    build-essential cmake pkg-config libssl-dev curl \
-    iputils-ping net-tools dnsutils \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# 安装构建 Rust / evcxr / uv 所需的系统包
+RUN apt-get update && \
+    apt-get install -y \
+        build-essential \
+        cmake \
+        pkg-config \
+        libssl-dev \
+        curl \
+        iputils-ping \
+        net-tools \
+        dnsutils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# ===================================================================================
-# 阶段 2: 切换到 jovyan 用户，完成所有用户空间的编译和安装
-# ===================================================================================
+# ------------------------------------------------------------
+# 阶段 2：安装 Rust 工具链、evcxr kernel、uv
+#   统一装到 /opt/rust，避免被 K8s PV 覆盖
+# ------------------------------------------------------------
+ENV RUSTUP_HOME=/opt/rust
+ENV CARGO_HOME=/opt/rust
+ENV PATH="/opt/rust/bin:${PATH}"
+
+# 安装 Rust（自动把 cargo、rustc 放到 /opt/rust/bin）
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && rustc --version \
+    && cargo --version
+
+# 安装 evcxr_jupyter 并注册为系统级 kernel
+RUN cargo install evcxr_jupyter \
+    && evcxr_jupyter --install --sys-prefix
+
+# 安装 uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && uv --version
+
+# 通过软链接把常用二进制暴露到 /usr/local/bin
+#（即使 PATH 被某些环境重置也找得到）
+RUN ln -sf /opt/rust/bin/cargo  /usr/local/bin/cargo && \
+    ln -sf /opt/rust/bin/rustc  /usr/local/bin/rustc && \
+    ln -sf /opt/rust/bin/uv     /usr/local/bin/uv     && \
+    ln -sf /opt/rust/bin/uvx    /usr/local/bin/uvx
+
+# ------------------------------------------------------------
+# 阶段 3：切回 jovyan 用户并安装常用 Python 包
+# ------------------------------------------------------------
 USER jovyan
 
-# 预先创建相关目录，避免不存在
-RUN mkdir -p /home/jovyan/.cargo/bin /home/jovyan/.local/bin
+# 用 uv 安装 Python 扩展（系统级，避免用户目录被 PV 覆盖）
+RUN uv pip install --system --no-cache-dir \
+        jupyterlab-language-pack-zh-CN \
+        jupyterlab-lsp \
+        jedi-language-server
 
-# 设置 PATH，确保后续 RUN 都能用到 cargo、uv、pip3 等
-ENV PATH="/home/jovyan/.cargo/bin:/home/jovyan/.local/bin:${PATH}"
-
-# 1. 安装 Rust 工具链
-# rustup 会自动把 cargo、rustc 装进 ~/.cargo/bin
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && /home/jovyan/.cargo/bin/rustc --version \
-    && /home/jovyan/.cargo/bin/cargo --version
-
-# 2. 编译和安装 evcxr_jupyter 到用户目录
-RUN /home/jovyan/.cargo/bin/cargo install evcxr_jupyter \
-    && /home/jovyan/.cargo/bin/evcxr_jupyter --install \
-    && /home/jovyan/.cargo/bin/cargo install --git https://github.com/astral-sh/uv uv \
-    && /home/jovyan/.cargo/bin/uv --version
-
-# 3. 使用 uv 安装 Python 包
-RUN /home/jovyan/.cargo/bin/uv pip install --system --no-cache-dir \
-        jupyterlab-language-pack-zh-CN jupyterlab-lsp jedi-language-server
-
+# 工作目录保持官方默认
 WORKDIR /home/jovyan
 
+# 元数据标签
 LABEL maintainer="Feature"
-LABEL description="[SECURE] Jupyter notebook with system-wide Rust kernel, uv, and tools"
+LABEL description="JupyterLab in K8s with Rust kernel, uv, pre-installed tools (system-wide)"
