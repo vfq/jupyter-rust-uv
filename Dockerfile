@@ -56,8 +56,7 @@ USER jovyan
 RUN echo 'source /opt/rust/env 2>/dev/null || true' >> ~/.bashrc
 
 # 用 uv 安装 Python 扩展（系统级，避免用户目录被 PV 覆盖）
-RUN source /opt/rust/env && \
-    uv pip install --system --no-cache-dir \
+RUN pip install --system --no-cache-dir \
         jupyterlab-language-pack-zh-CN \
         jupyterlab-lsp \
         jedi-language-server
