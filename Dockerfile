@@ -23,7 +23,6 @@ RUN apt-get update && \
 # ------------------------------------------------------------
 # 阶段 2：安装 Rust 工具链、evcxr kernel、uv
 # 统一装到 /opt/rust，避免被 K8s PV 覆盖
-# 必须让所有过程看到一致的 CARGO_HOME/RUSTUP_HOME 变量
 # ------------------------------------------------------------
 
 # 设置安装路径（防止挂载 HOME 导致无效）
@@ -32,27 +31,26 @@ ENV CARGO_HOME=/opt/rust
 ENV UV_INSTALL_DIR=/opt/rust/bin
 ENV PATH="/opt/rust/bin:${PATH}"
 
-# 安装 Rust（自动把 cargo、rustc 放到 /opt/rust/bin）
+# 一次性安装 Rust 和 uv
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rustc --version \
-    && cargo --version
+    && cargo --version \
+    && uv --version
 
-# 安装 evcxr_jupyter 并注册为系统级 kernel
-RUN source $CARGO_HOME/env && \
-    cargo install evcxr_jupyter && \
-    evcxr_jupyter --install
-
-# 创建软链接确保路径通用（即使 PATH 被重置）
-RUN ln -sf /opt/rust/bin/cargo /usr/local/bin/cargo && \
-    ln -sf /opt/rust/bin/rustc /usr/local/bin/rustc && \
-    ln -sf /opt/rust/bin/uv /usr/local/bin/uv && \
-    ln -sf /opt/rust/bin/uvx /usr/local/bin/uvx && \
+# 安装 evcxr_jupyter 并将其移动到系统级 kernel 目录
+# chown 确保 jovyan 用户有权限使用这个 kernel
+RUN cargo install evcxr_jupyter && \
+    evcxr_jupyter --install && \
     mkdir -p /opt/conda/share/jupyter/kernels && \
     mv /home/jovyan/.local/share/jupyter/kernels/rust /opt/conda/share/jupyter/kernels/rust && \
-    chown -R jovyan:users /opt/conda/share/jupyter/kernels/rust
+    chown -R jovyan:users /opt/conda/share/jupyter/kernels/rust && \
+    rm -rf /home/jovyan/.local # 清理掉 root 用户在 jovyan 家目录下创建的临时文件
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && uv --version
+# --- [核心修正] ---
+# 在切换回 jovyan 用户之前，将 /home/jovyan 目录的所有权完全交还给 jovyan 用户
+# 这将修复所有因 root 操作导致的权限问题
+RUN chown -R jovyan:users /home/jovyan/
 
 # ------------------------------------------------------------
 # 阶段 3：切回 jovyan 用户并安装常用 Python 包
@@ -73,4 +71,4 @@ WORKDIR /home/jovyan
 
 # 元数据标签
 LABEL maintainer="Feature"
-LABEL description="JupyterLab in K8s with Rust kernel, pre-installed tools (system-wide)"
+LABEL description="JupyterLab with Rust kernel, installed system-wide for multi-user environments (e.g., JupyterHub)"
