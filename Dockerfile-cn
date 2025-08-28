@@ -24,27 +24,25 @@ RUN apt-get update && \
 # 阶段 2：配置国内镜像并安装 Rust 工具链
 # ------------------------------------------------------------
 
-# 设置安装路径（防止挂载 HOME 导致无效）
+# 设置安装路径
 ENV RUSTUP_HOME=/opt/rust
 ENV CARGO_HOME=/opt/rust
 ENV UV_INSTALL_DIR=/opt/rust/bin
 ENV PATH="/opt/rust/bin:${PATH}"
 
-# --- [新增] 为 rustup 配置清华大学镜像源 ---
-# 根据您提供的文档，在安装 rustup 前设置这两个环境变量
-ENV RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup
-ENV RUSTUP_UPDATE_ROOT=https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup
-
-# --- [新增] 为 cargo (Rust包管理器) 配置清华大学镜像源 ---
-# 这会极大地加速 `cargo install` 的过程
+# 为 cargo (Rust包管理器) 配置清华大学镜像源
 RUN mkdir -p ${CARGO_HOME} && \
     echo '[source.crates-io]' >> ${CARGO_HOME}/config.toml && \
     echo 'replace-with = "tuna"' >> ${CARGO_HOME}/config.toml && \
     echo '[source.tuna]' >> ${CARGO_HOME}/config.toml && \
     echo 'registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"' >> ${CARGO_HOME}/config.toml
 
-# 使用配置好的镜像源安装 Rust 和 uv
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+# --- [核心修正] ---
+# 将环境变量直接注入到 RUN 命令中，确保 rustup-init 脚本能读取到
+# 同时删除了之前单独设置的 ENV RUSTUP_DIST_SERVER 和 ENV RUSTUP_UPDATE_ROOT
+RUN RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup \
+    RUSTUP_UPDATE_ROOT=https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rustc --version \
     && cargo --version \
@@ -58,7 +56,7 @@ RUN cargo install evcxr_jupyter && \
     chown -R jovyan:users /opt/conda/share/jupyter/kernels/rust && \
     rm -rf /home/jovyan/.local
 
-# 在切换回 jovyan 用户之前，将 /home/jovyan 目录的所有权完全交还给 jovyan 用户
+# 将 /home/jovyan 目录的所有权完全交还给 jovyan 用户
 RUN chown -R jovyan:users /home/jovyan/
 
 # ------------------------------------------------------------
