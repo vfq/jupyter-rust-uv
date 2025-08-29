@@ -8,7 +8,39 @@ FROM quay.io/jupyter/scipy-notebook:latest
 USER root
 
 # [可选] 如果您有其他需要 apt 安装的系统工具，可以放在这里
-# RUN apt-get update && apt-get install -y ...
+RUN sed -i 's@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
+    sed -i 's@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
+    apt-get update && \
+    # 安装一些有用的系统工具
+    apt-get install -y --no-install-recommends \
+        curl \
+        iputils-ping \
+        wget \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN cat <<EOF > /opt/conda/.condarc
+channels:
+  - defaults
+show_channel_urls: true
+default_channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+custom_channels:
+  conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  msys2: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  bioconda: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  menpo: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  simpleitk: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+EOF
+
+# 创建一个系统级的 pip.conf 文件
+RUN mkdir -p /etc/pip && \
+    cat <<EOF > /etc/pip.conf
+[global]
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple
+EOF
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
@@ -22,6 +54,19 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
 # 设置时区
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN cat <<EOF > /home/jovyan/.condarc
+# 继承系统级的镜像源配置
+# 同时定义持久化的 envs 和 pkgs 目录
+envs_dirs:
+  - /home/jovyan/work/.conda/envs
+pkgs_dirs:
+  - /home/jovyan/work/.conda/pkgs
+EOF
+
+# 在镜像中预先创建好这些目录结构
+RUN mkdir -p /home/jovyan/work/.conda/envs && \
+    mkdir -p /home/jovyan/work/.conda/pkgs
 
 # [重要] 确保 jovyan 用户对其主目录拥有完全所有权
 # 这一步可以防止因 root 操作可能导致的权限问题
