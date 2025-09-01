@@ -53,24 +53,30 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
+# 1. 安装核心的 JupyterHub 和 Spawner 组件
 RUN mamba install --yes -c conda-forge \
     'dockerspawner' \
     'oauthenticator' \
+    'docker-py' \
+    && mamba clean --all -f -y
+
+# 2. 安装 JupyterLab UI 和代码辅助工具
+RUN mamba install --yes -c conda-forge \
     'jupyterlab-language-pack-zh-CN' \
     'jupyterlab-lsp' \
     'python-lsp-server[all]' \
-    'jupyterlab_execute_time' \
     'jupyterlab-variableinspector' \
+    && mamba clean --all -f -y
+
+# 3. 安装其他实用工具扩展
+RUN mamba install --yes -c conda-forge \
+    'jupyterlab_execute_time' \
     'jupyter-resource-usage' \
     'jupyterlab-s3-browser' \
-    # docker-py 的 conda 包名是 docker-py
-    'docker-py' \
-    && \
-    # [重要] 添加 JupyterLab 构建步骤
-    jupyter lab build --minimize=False && \
-    # 清理 mamba 缓存
-    mamba clean --all -f -y && \
-    # [重要] 使用官方脚本修复文件权限
+    && mamba clean --all -f -y
+
+# 4. 在所有扩展安装完毕后，执行一次最终的构建和权限修复
+RUN jupyter lab build --minimize=False && \
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
 
