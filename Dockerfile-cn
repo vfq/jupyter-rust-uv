@@ -53,30 +53,21 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
-# 1. 安装核心的 JupyterHub 和 Spawner 组件
-RUN mamba install --yes -c conda-forge \
+RUN pip install --no-cache-dir \
     'dockerspawner' \
+    'docker' \
     'oauthenticator' \
-    'docker-py' \
-    && mamba clean --all -f -y
-
-# 2. 安装 JupyterLab UI 和代码辅助工具
-RUN mamba install --yes -c conda-forge \
     'jupyterlab-language-pack-zh-CN' \
     'jupyterlab-lsp' \
     'python-lsp-server[all]' \
-    'jupyterlab-variableinspector' \
-    && mamba clean --all -f -y
-
-# 3. 安装其他实用工具扩展
-RUN mamba install --yes -c conda-forge \
     'jupyterlab_execute_time' \
+    'lckr-jupyterlab-variableinspector' \
     'jupyter-resource-usage' \
     'jupyterlab-s3-browser' \
-    && mamba clean --all -f -y
-
-# 4. 在所有扩展安装完毕后，执行一次最终的构建和权限修复
-RUN jupyter lab build --minimize=False && \
+    && \
+    # [重要] 所有扩展安装完毕后，执行 JupyterLab 构建
+    jupyter lab build --minimize=False && \
+    # [重要] 使用官方脚本修复文件权限
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
 
@@ -99,12 +90,12 @@ RUN mkdir -p /home/jovyan/work/.conda/envs && \
 
 # [重要] 确保 jovyan 用户对其主目录拥有完全所有权
 # 这一步可以防止因 root 操作可能导致的权限问题
-RUN chown -R jovyan:users /home/jovyan/
+chown -R ${NB_USER}:${NB_GID} /home/jovyan
 
 # ------------------------------------------------------------
 # 阶段 2：切回 jovyan 用户
 # ------------------------------------------------------------
-USER jovyan
+USER ${NB_USER}
 
 # 工作目录保持官方默认
 WORKDIR /home/jovyan
