@@ -8,9 +8,7 @@ FROM quay.io/jupyter/scipy-notebook:latest
 USER root
 
 # [可选] 如果您有其他需要 apt 安装的系统工具，可以放在这里
-RUN mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.bak && \
-    # 2. 写入清华源的 DEB822 格式配置文件
-    cat <<EOF > /etc/apt/sources.list.d/ubuntu.sources && \
+RUN cat <<EOF > /etc/apt/sources.list.d/ubuntu.sources && \
 Types: deb
 URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
 Suites: noble noble-updates noble-backports
