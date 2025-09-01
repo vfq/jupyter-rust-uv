@@ -49,7 +49,12 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
     oauthenticator \
     jupyterlab-language-pack-zh-CN \
     jupyterlab-lsp \
-    jedi-language-server
+    jedi-language-server \
+    jupyterlab_execute_time \
+    jupyterlab-git \
+    jupyterlab-variableinspector \
+    jupyter-resource-usage \
+    jupyterlab-s3-browser
 
 # 设置时区
 ENV TZ=Asia/Shanghai
