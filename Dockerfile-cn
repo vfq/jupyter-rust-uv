@@ -74,8 +74,9 @@ ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN mkdir -p /home/jovyan/work/.conda/envs && \
-    mkdir -p /home/jovyan/work/.conda/pkgs && \
-    cat <<EOF > /home/jovyan/.condarc && \
+    mkdir -p /home/jovyan/work/.conda/pkgs
+
+RUN cat <<EOF > /home/jovyan/.condarc && \
 envs_dirs:
   - /home/jovyan/work/.conda/envs
 pkgs_dirs:
