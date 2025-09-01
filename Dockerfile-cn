@@ -51,7 +51,6 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
     jupyterlab-lsp \
     jedi-language-server \
     jupyterlab_execute_time \
-    jupyterlab-git \
     jupyterlab-variableinspector \
     jupyter-resource-usage \
     jupyterlab-s3-browser
