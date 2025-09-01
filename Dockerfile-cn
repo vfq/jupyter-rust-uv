@@ -8,10 +8,23 @@ FROM quay.io/jupyter/scipy-notebook:latest
 USER root
 
 # [可选] 如果您有其他需要 apt 安装的系统工具，可以放在这里
-RUN sed -i 's@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
-    sed -i 's@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
+RUN mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.bak && \
+    # 2. 写入清华源的 DEB822 格式配置文件
+    cat <<EOF > /etc/apt/sources.list.d/ubuntu.sources && \
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
+Suites: noble noble-updates noble-backports
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
+Suites: noble-security
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF && \
+    # 3. 更新源并安装工具，最后清理缓存
     apt-get update && \
-    # 安装一些有用的系统工具
     apt-get install -y --no-install-recommends \
         curl \
         iputils-ping \
@@ -43,17 +56,26 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
-    dockerspawner \
-    docker \
-    oauthenticator \
-    jupyterlab-language-pack-zh-CN \
-    jupyterlab-lsp \
-    jedi-language-server \
-    jupyterlab_execute_time \
-    jupyterlab-variableinspector \
-    jupyter-resource-usage \
-    jupyterlab-s3-browser
+RUN mamba install --yes -c conda-forge \
+    'dockerspawner' \
+    'oauthenticator' \
+    'jupyterlab-language-pack-zh-CN' \
+    'jupyterlab-lsp' \
+    'python-lsp-server[all]' \
+    'jupyterlab_execute_time' \
+    'jupyterlab-variableinspector' \
+    'jupyter-resource-usage' \
+    'jupyterlab-s3-browser' \
+    # docker-py 的 conda 包名是 docker-py
+    'docker-py' \
+    && \
+    # [重要] 添加 JupyterLab 构建步骤
+    jupyter lab build --minimize=False && \
+    # 清理 mamba 缓存
+    mamba clean --all -f -y && \
+    # [重要] 使用官方脚本修复文件权限
+    fix-permissions "${CONDA_DIR}" && \
+    fix-permissions "/home/${NB_USER}"
 
 # 设置时区
 ENV TZ=Asia/Shanghai
