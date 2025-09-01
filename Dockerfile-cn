@@ -20,9 +20,9 @@ URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
 Suites: noble-security
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-EOF \
-&& \
-    apt-get update && \
+EOF
+
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         iputils-ping \
@@ -83,10 +83,10 @@ envs_dirs:
   - /home/jovyan/work/.conda/envs
 pkgs_dirs:
   - /home/jovyan/work/.conda/pkgs
-EOF \
-&& \
-    # 确保 jovyan 用户拥有其主目录的全部所有权
-    chown -R ${NB_USER}:${NB_GID} /home/jovyan
+EOF
+
+# 确保 jovyan 用户拥有其主目录的全部所有权
+RUN chown -R ${NB_USER}:${NB_GID} /home/jovyan
 
 # ------------------------------------------------------------
 # 阶段 2：切回 jovyan 用户
