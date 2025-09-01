@@ -53,6 +53,10 @@ RUN mkdir -p /etc/pip && \
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
+RUN mamba install --yes -c conda-forge 'nodejs' && \
+    mamba clean --all -f -y && \
+    fix-permissions "${CONDA_DIR}"
+
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
 RUN pip install --no-cache-dir \
     'dockerspawner' \
