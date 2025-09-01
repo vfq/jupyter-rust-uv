@@ -82,7 +82,7 @@ envs_dirs:
   - /home/jovyan/work/.conda/envs
 pkgs_dirs:
   - /home/jovyan/work/.conda/pkgs
-EOF && \
+EOF
     # 确保 jovyan 用户拥有其主目录的全部所有权
     chown -R ${NB_USER}:${NB_GID} /home/jovyan
 
