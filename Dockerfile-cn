@@ -72,6 +72,9 @@ RUN pip install --no-cache-dir \
     'ipykernel' \
     &&\
     mamba shell init --shell bash --root-prefix /opt/conda && \
+    mamba create -n sar2real python=3.12 --yes && \
+    mamba activate sar2real && \
+    pip install --no-cache-dir 'ipykernel' && \
     python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
     # [重要] 使用官方脚本修复文件权限
     fix-permissions "${CONDA_DIR}" && \
