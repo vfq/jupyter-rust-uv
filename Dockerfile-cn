@@ -58,7 +58,7 @@ COPY environment.yml /tmp/environment.yml
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
 RUN pip install --no-cache-dir \
-    'lckr-jupyterlab-variableinspector' 
+    'lckr-jupyterlab-variableinspector' \
     'dockerspawner' \
     'docker' \
     'oauthenticator' \
