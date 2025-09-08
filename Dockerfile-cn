@@ -1,39 +1,4 @@
-# 采用官方镜像作为基础
-# scipy-notebook 包含了常用的科学计算包，如果不需要可以换成 jupyter/base-notebook
-FROM quay.io/jupyter/scipy-notebook:latest
 
-# ------------------------------------------------------------
-# 阶段 1：以 root 身份安装系统依赖和 Python 扩展包
-# ------------------------------------------------------------
-USER root
-
-# [可选] 如果您有其他需要 apt 安装的系统工具，可以放在这里
-RUN cat <<EOF > /etc/apt/sources.list.d/ubuntu.sources
-Types: deb
-URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
-Suites: noble noble-updates noble-backports
-Components: main restricted universe multiverse
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-Types: deb
-URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
-Suites: noble-security
-Components: main restricted universe multiverse
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-EOF
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        iputils-ping \
-        wget \
-    && apt-get clean
-
-RUN cat <<EOF > /opt/conda/.condarc
-channels:
-  - conda-forge
-  - defaults
-show_channel_urls: true
 default_channels:
   - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
   - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
@@ -74,7 +39,7 @@ RUN pip install --no-cache-dir \
     fix-permissions "/home/${NB_USER}"
 
 COPY sar2real.yml /tmp/sar2real.yml
-RUN mamba shell init --shell bash --prefix /opt/conda && \
+RUN mamba shell init --shell bash --root-prefix /opt/conda && \
     mamba install --yes 'ipykernel' && \
     mamba run --name sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
     mamba clean --all -f -y && \
