@@ -1,0 +1,17 @@
+name: sar2real
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12.10
+  - ipykernel
+  - gdal
+  - proj
+  - proj-data
+  - geopandas
+  - xarray
+  - dask
+  - rasterio
+  - xmltodict
+  - tqdm
+  - scipy
