@@ -54,18 +54,12 @@ RUN mkdir -p /etc/pip && \
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
+COPY environment.yml /tmp/environment.yml
+
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
-RUN pip install --no-cache-dir \
-    'dockerspawner' \
-    'docker' \
-    'oauthenticator' \
-    'jupyterlab-language-pack-zh-CN' \
-    'jupyterlab-lsp' \
-    'python-lsp-server[all]' \
-    'jupyterlab_execute_time' \
-    'lckr-jupyterlab-variableinspector' \
-    'jupyter-resource-usage' \
-    'jupyterlab-s3-browser' && \
+RUN mamba env update --name base --file /tmp/environment.yml && \
+    mamba clean --all -f -y && \
+    pip install --no-cache-dir 'lckr-jupyterlab-variableinspector' &&\
     # [重要] 使用官方脚本修复文件权限
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
