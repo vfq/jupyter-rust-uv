@@ -54,9 +54,6 @@ RUN mkdir -p /etc/pip && \
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
-COPY environment.yml /home/jovyan/work/environment.yml
-COPY sar2real.yml /home/jovyan/work/sar2real.yml
-
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
 RUN pip install --no-cache-dir \
     'lckr-jupyterlab-variableinspector' \
@@ -95,6 +92,8 @@ pkgs_dirs:
 EOF
 
 ENV PROJ_LIB=/home/jovyan/work/.conda/envs/sar2real/share/proj
+COPY environment.yml /home/jovyan/work/environment.yml
+COPY sar2real.yml /home/jovyan/work/sar2real.yml
 
 # 确保 jovyan 用户拥有其主目录的全部所有权
 RUN chown -R ${NB_USER}:${NB_GID} /home/jovyan
