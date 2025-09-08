@@ -1,0 +1,14 @@
+name: base
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - dockerspawner
+  - oauthenticator
+  - docker-py
+  - jupyterlab-language-pack-zh-CN
+  - jupyterlab-lsp
+  - python-lsp-server[all]
+  - jupyterlab_execute_time
+  - jupyterlab-variableinspector
+  - jupyter-resource-usage
