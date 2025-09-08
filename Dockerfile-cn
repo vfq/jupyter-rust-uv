@@ -94,6 +94,8 @@ pkgs_dirs:
   - /home/jovyan/work/.conda/pkgs
 EOF
 
+ENV PROJ_LIB=/home/jovyan/work/.conda/envs/sar2real/share/proj
+
 # 确保 jovyan 用户拥有其主目录的全部所有权
 RUN chown -R ${NB_USER}:${NB_GID} /home/jovyan
 
