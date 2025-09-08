@@ -74,9 +74,8 @@ RUN pip install --no-cache-dir \
     fix-permissions "/home/${NB_USER}"
 
 COPY sar2real.yml /tmp/sar2real.yml
-RUN mamba env create --file /tmp/sar2real.yml && \
-    # 使用 mamba run 在新环境中执行命令以注册内核
-    # 这会在用户目录中创建一个内核定义文件
+RUN mamba shell init --shell bash --prefix /opt/conda && \
+    mamba install --yes 'ipykernel' && \
     mamba run --name sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
     mamba clean --all -f -y && \
     # 修复在新环境中创建的内核文件的权限
