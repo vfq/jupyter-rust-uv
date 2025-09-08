@@ -54,8 +54,8 @@ RUN mkdir -p /etc/pip && \
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 EOF
 
-COPY environment.yml /tmp/environment.yml
-COPY sar2real.yml /tmp/sar2real.yml
+COPY environment.yml /home/jovyan/work/environment.yml
+COPY sar2real.yml /home/jovyan/work/sar2real.yml
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
 RUN pip install --no-cache-dir \
@@ -71,12 +71,12 @@ RUN pip install --no-cache-dir \
     'jupyter-resource-usage' \
     'ipykernel' \
     &&\
-    mamba create -n sar2real python=3.12 --yes && \
+    # mamba create -n sar2real python=3.12 --yes && \
     # 使用 mamba run 在新環境中安裝 ipykernel
-    mamba run -n sar2real pip install --no-cache-dir 'ipykernel' && \
+    # mamba run -n sar2real pip install --no-cache-dir 'ipykernel' && \
     # 使用 mamba run 在新環境中執行註冊指令
-    mamba run -n sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
-    mamba clean --all -f -y && \
+    # mamba run -n sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
+    # mamba clean --all -f -y && \
     # [重要] 使用官方脚本修复文件权限
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
