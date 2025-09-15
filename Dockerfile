@@ -37,10 +37,10 @@ RUN pip install --no-cache-dir \
     &&\
     # mamba create -n sar2real python=3.12 --yes && \
     # 使用 mamba run 在新環境中安裝 ipykernel
-    eval "$(mamba shell hook --shell bash)" && \
+    #eval "$(mamba shell hook --shell bash)" && \
     # 使用 mamba run 在新環境中執行註冊指令
-    mamba run -n sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
-    mamba clean --all -f -y && \
+    #mamba run -n sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
+    #mamba clean --all -f -y && \
     # [重要] 使用官方脚本修复文件权限
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}"
@@ -77,3 +77,4 @@ WORKDIR /home/jovyan
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
+
