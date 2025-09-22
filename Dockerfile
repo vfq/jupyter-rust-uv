@@ -6,7 +6,6 @@ ENV MAMBA_NO_INPUT=1
 
 RUN mamba create -n sar2real python=3.12 --yes && \
     echo 'eval "$(mamba shell hook --shell bash)"' >> ~/.bashrc && \
-    mamba activate sar2real && \
     pip install --no-cache-dir \
         'lckr-jupyterlab-variableinspector' \
         'oauthenticator' \
@@ -23,6 +22,7 @@ RUN mamba create -n sar2real python=3.12 --yes && \
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
+
 
 
 
