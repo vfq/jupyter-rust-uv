@@ -18,13 +18,18 @@ RUN mamba create -n sar2real python=3.12 --yes && \
     # 清理缓存以减小镜像大小
     mamba clean --all -f -y
 
-RUN echo "source /opt/conda/etc/profile.d/conda.sh && conda activate sar2real" >> /home/jovyan/.bashrc
+RUN echo 'source /opt/conda/etc/profile.d/conda.sh' >> /home/jovyan/.bashrc
+
+RUN echo 'conda activate sar2real' >> /home/jovyan/.bashrc
+
+RUN echo '[ -n "$PS1" ] && source ~/.bashrc' >> /home/jovyan/.profile
 
 ENV CONDA_DEFAULT_ENV=sar2real
 
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
+
 
 
 
