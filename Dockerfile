@@ -32,7 +32,7 @@ RUN pip install --no-cache-dir \
     'jupyter-resource-usage' \
     'ipykernel' \
     &&\
-    mamba create -n sar2real python=3.12 --yes && \
+    mamba create -n sar2real python=3.12 ipykernel --yes && \
     # 使用 mamba run 在新環境中安裝 ipykernel
     #eval "$(mamba shell hook --shell bash)" && \
     # 使用 mamba run 在新環境中執行註冊指令
@@ -61,5 +61,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
+
 
 
