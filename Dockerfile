@@ -14,7 +14,7 @@ RUN mamba create -n sar2real python=3.12 --yes && \
         'jupyterlab_execute_time' \
         'jupyter-resource-usage' \
         'ipykernel' && \
-    mamba run -n sar2real python -m ipykernel install --sys-prefix --name "sar2real" --display-name "Python (sar2real)" && \
+    mamba run -n sar2real python -m ipykernel install --prefix=/opt/conda --name "sar2real" --display-name "Python (sar2real)" && \
     # 清理缓存以减小镜像大小
     mamba clean --all -f -y
 
@@ -29,6 +29,7 @@ ENV CONDA_DEFAULT_ENV=sar2real
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
+
 
 
 
