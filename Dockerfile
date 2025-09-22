@@ -5,76 +5,61 @@ FROM quay.io/jupyter/scipy-notebook:latest
 # ------------------------------------------------------------
 # 阶段 1：以 root 身份安装系统依赖和 Python 扩展包
 # ------------------------------------------------------------
-USER root
+# USER root
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        iputils-ping \
-        wget \
-    && apt-get clean
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#         curl \
+#         iputils-ping \
+#         wget \
+#     && apt-get clean
 
-RUN cat <<EOF > /opt/conda/.condarc
-channels:
-  - conda-forge
-  - defaults
-show_channel_urls: true
-EOF
+# RUN cat <<EOF > /opt/conda/.condarc
+# channels:
+#   - conda-forge
+#   - defaults
+# show_channel_urls: true
+# EOF
 
 # 使用 pip 并通过国内 pypi 镜像一次性安装所有 JupyterHub 相关的 Python 扩展
 RUN pip install --no-cache-dir \
     'lckr-jupyterlab-variableinspector' \
-    'dockerspawner' \
-    'docker' \
     'oauthenticator' \
     'jupyterlab-language-pack-zh-CN' \
     'jupyterlab-lsp' \
     'python-lsp-server[all]' \
     'jupyterlab_execute_time' \
-    'lckr-jupyterlab-variableinspector' \
     'jupyter-resource-usage' \
     'ipykernel' \
     &&\
-    # mamba create -n sar2real python=3.12 --yes && \
+    mamba create -n sar2real python=3.12 --yes && \
     # 使用 mamba run 在新環境中安裝 ipykernel
     #eval "$(mamba shell hook --shell bash)" && \
     # 使用 mamba run 在新環境中執行註冊指令
-    #mamba run -n sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
-    #mamba clean --all -f -y && \
+    mamba run -n sar2real python -m ipykernel install --user --name "sar2real" --display-name "Python (sar2real)" && \
+    mamba clean --all -f -y
+    # && \
     # [重要] 使用官方脚本修复文件权限
-    fix-permissions "${CONDA_DIR}" && \
-    fix-permissions "/home/${NB_USER}"
+    # fix-permissions "${CONDA_DIR}" && \
+    # fix-permissions "/home/${NB_USER}"
 
 # 设置时区
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN mkdir -p /home/jovyan/work/.conda/envs && \
-    mkdir -p /home/jovyan/work/.conda/pkgs && \
-cat <<EOF > /home/jovyan/.condarc
-envs_dirs:
-  - /home/jovyan/work/.conda/envs
-pkgs_dirs:
-  - /home/jovyan/work/.conda/pkgs
-EOF
-
-ENV PROJ_LIB=/home/jovyan/work/.conda/envs/sar2real/share/proj
-
-# 确保 jovyan 用户拥有其主目录的全部所有权
-RUN chown -R ${NB_USER}:${NB_GID} /home/jovyan
-
 # ------------------------------------------------------------
 # 阶段 2：切回 jovyan 用户
 # ------------------------------------------------------------
-USER ${NB_USER}
+# USER ${NB_USER}
 
-COPY environment.yml /home/jovyan/environment.yml
-COPY sar2real.yml /home/jovyan/sar2real.yml
+# COPY environment.yml /home/jovyan/environment.yml
+# COPY sar2real.yml /home/jovyan/sar2real.yml
 
-# 工作目录保持官方默认
-WORKDIR /home/jovyan
+# # 工作目录保持官方默认
+# WORKDIR /home/jovyan
 
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
+
 
