@@ -23,7 +23,7 @@ RUN mamba create -n sar2real python=3.12 --yes && \
 # 元数据标签
 LABEL maintainer="Feature"
 LABEL description="JupyterLab with extensions for JupyterHub (dockerspawner, oauthenticator)"
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root"]
+
 
 
 
